@@ -3,20 +3,20 @@ package main
 import "sync"
 
 func ExecutePipeline(jobs ...job) {
-
-	chans := make([]chan any, len(jobs)+1)
-	for i := range chans {
-		chans[i] = make(chan any)
-	}
-
 	wg := &sync.WaitGroup{}
-	for i, j := range jobs {
+	in := make(chan any)
+
+	for _, j := range jobs {
 		wg.Add(1)
+		out := make(chan any)
+
 		go func(in, out chan any, j job) {
 			defer wg.Done()
 			j(in, out)
 			close(out)
-		}(chans[i], chans[i+1], j)
+		}(in, out, j)
+
+		in = out
 	}
 
 	wg.Wait()
